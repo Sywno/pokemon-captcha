@@ -10,6 +10,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpDown, Filter, Swords, Shield, Zap, Skull, Trophy } from "lucide-react";
 import { TYPE_COLORS } from "@/lib/constants";
 import { getPokemonData } from "@/lib/pokeapi";
+import { useNarrator } from "@/hooks/useNarrator";
+import { NarratorBox } from "@/components/game/NarratorBox";
+import { PERSONALITIES, BattleTurnContext } from "@/lib/ai/narrator-types";
 
 type Phase = 'SELECT' | 'BATTLE' | 'RESULT';
 
@@ -22,6 +25,10 @@ export default function BattlePage() {
     // Filter State
     const [rarityFilter, setRarityFilter] = useState<string | 'ALL'>('ALL');
     const [sortBy, setSortBy] = useState<'ID' | 'RARITY' | 'LEVEL'>('ID');
+
+    // Narrator State
+    const [personalityId, setPersonalityId] = useState('sportscaster');
+    const { commentary, isNarrating, error: narratorError, narrateTurn: narrateAction, clearCommentary } = useNarrator(personalityId);
 
     // Filtered List
     const filteredList = pokemonList.filter(p => {
@@ -131,6 +138,47 @@ export default function BattlePage() {
     const activePlayerMon = selectedTeam[playerActiveIndex];
     const activeEnemyMon = enemyTeam[enemyActiveIndex];
 
+    // Helper: build a BattleTurnContext for the narrator
+    const buildNarratorContext = (
+        attacker: Pokemon, defender: Pokemon,
+        move: { name: string; type: string; power: number },
+        damage: number, isCrit: boolean, multiplier: number,
+        defenderNewHP: number, attackerIsPlayer: boolean,
+        currentTurn: number
+    ): BattleTurnContext => {
+        const isKO = defenderNewHP <= 0;
+        return {
+            turnNumber: currentTurn,
+            attacker: {
+                name: attacker.name,
+                types: attacker.types,
+                currentHP: attacker.stats.hp,
+                maxHP: attacker.stats.hp,
+                isPlayer: attackerIsPlayer,
+            },
+            defender: {
+                name: defender.name,
+                types: defender.types,
+                currentHP: Math.max(0, defenderNewHP),
+                maxHP: defender.stats.hp,
+                isPlayer: !attackerIsPlayer,
+            },
+            move: { name: move.name, type: move.type, power: move.power },
+            result: {
+                damage,
+                isCritical: isCrit,
+                effectiveness: multiplier > 1.2 ? "super_effective" : multiplier < 0.8 ? "not_effective" : "neutral",
+                isKO,
+            },
+            battleStatus: {
+                playerRemainingPokemon: selectedTeam.length - playerActiveIndex,
+                enemyRemainingPokemon: enemyTeam.length - enemyActiveIndex,
+                isOver: false,
+                winner: null,
+            },
+        };
+    };
+
     const handleAttack = (move: any) => { // Type as any for now or import Move
         if (!isPlayerTurn || winner) return;
 
@@ -145,6 +193,10 @@ export default function BattlePage() {
         const newHP = Math.max(0, enemyHP - damage);
         setEnemyHP(newHP);
         setBattleLog(prev => [logMsg, ...prev]);
+
+        // Trigger the narrator
+        const ctx = buildNarratorContext(activePlayerMon, activeEnemyMon, move, damage, isCrit, multiplier, newHP, true, turnCount);
+        narrateAction(ctx);
 
         if (newHP === 0) {
             handleEnemyFaint();
@@ -228,8 +280,25 @@ export default function BattlePage() {
         return (
             <div className="pb-20">
                 <h1 className="text-3xl font-bold mb-4">Select Your Team (Max 3)</h1>
-                <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm sticky top-20 z-10">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm sticky top-20 z-10">
                     <span className="font-bold text-lg">{selectedTeam.length} / 3 Selected</span>
+
+                    {/* Narrator Personality Picker */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-gray-500">🎙️ Narrateur:</span>
+                        <select
+                            value={personalityId}
+                            onChange={(e) => setPersonalityId(e.target.value)}
+                            className="bg-gray-50 border border-gray-200 rounded-lg py-1 px-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                            {Object.values(PERSONALITIES).map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.emoji} {p.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <button
                         disabled={selectedTeam.length === 0}
                         onClick={startBattle}
@@ -440,6 +509,14 @@ export default function BattlePage() {
                     )}
                 </div>
             </div>
+
+            {/* Narrator Commentary */}
+            <NarratorBox
+                commentary={commentary}
+                isNarrating={isNarrating}
+                error={narratorError}
+                personalityId={personalityId}
+            />
         </div>
     );
 }

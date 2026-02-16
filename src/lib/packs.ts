@@ -65,25 +65,35 @@ function pickRarity(rates: Record<Rarity, number>): Rarity {
     return 'COMMON'; // Fallback
 }
 
+// Predefined Gen 1 Pokémon ID pools by rarity (based on base stat totals)
+// COMMON: total < 320 | RARE: 320-419 | SUPER_RARE: 420-499 | EPIC: 500-579 | LEGENDARY: 580+
+const RARITY_POOLS: Record<Rarity, number[]> = {
+    COMMON: [
+        10, 11, 13, 14, 16, 17, 19, 20, 21, 23, 27, 29, 32, 35, 39, 41, 43,
+        46, 48, 50, 52, 54, 56, 58, 60, 66, 69, 72, 74, 79, 81, 84, 86, 88,
+        90, 92, 96, 98, 100, 102, 104, 109, 111, 116, 118, 120, 129, 133,
+        1, 4, 7, 25, 37, 44, 70, 147
+    ],
+    RARE: [
+        2, 5, 8, 12, 15, 18, 22, 24, 26, 28, 30, 33, 36, 38, 40, 42, 47,
+        49, 51, 53, 55, 57, 61, 64, 67, 73, 75, 77, 80, 82, 85, 87, 89,
+        91, 93, 97, 99, 101, 105, 106, 107, 108, 110, 112, 113, 114, 117,
+        119, 121, 122, 123, 124, 125, 126, 127, 128, 132, 137, 138, 139, 140, 141, 148
+    ],
+    SUPER_RARE: [
+        3, 6, 9, 31, 34, 45, 62, 65, 68, 71, 76, 78, 83, 94, 95, 103,
+        115, 130, 131, 134, 135, 136, 142, 143, 149
+    ],
+    EPIC: [
+        59, 63, 38, 73, 76, 131, 142, 143, 149
+    ],
+    LEGENDARY: [144, 145, 146, 150, 151]
+};
+
 async function getRandomPokemonByRarity(rarity: Rarity): Promise<Pokemon> {
-    // In a real app we'd query DB by rarity.
-    // With PokeAPI, we don't know rarity until we fetch stats.
-    // Strategy: Fetch random ID (1-151), check rarity. If match, keep. If not, retry (up to limit).
-    // Optimization: Just get ANY random one for now to avoid infinite loops, but "pretend" it matches or bias RNG?
-    // Better: We defined rarity ranges by stats.
-    // Let's brute force a little bit: Try 3 times to get matching rarity. If fail, return whatever we got.
-
-    for (let i = 0; i < 5; i++) {
-        const id = Math.floor(Math.random() * 151) + 1;
-        const p = await getPokemonData(id);
-        if (p.rarity === rarity) return p;
-
-        // If we want Legendaries and keep getting Common, this is slow.
-        // For 'LEGENDARY', we might know specific IDs (Mewtwo: 150, Birds: 144-146)
-        if (rarity === 'LEGENDARY' && [144, 145, 146, 150, 151].includes(id)) return p;
-    }
-
-    // Fallback: just return a random one
-    const id = Math.floor(Math.random() * 151) + 1;
-    return await getPokemonData(id);
+    const pool = RARITY_POOLS[rarity];
+    const id = pool[Math.floor(Math.random() * pool.length)];
+    const pokemon = await getPokemonData(id);
+    // Return a copy so we don't mutate the cache, and override rarity
+    return { ...pokemon, rarity };
 }
