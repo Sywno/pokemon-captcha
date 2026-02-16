@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --background: #f3f4f6;
+  --foreground: #171717;
+}
+
+@layer utilities {
+  .card-holo {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0.05) 75%,
+      rgba(255, 255, 255, 0.1) 100%
+    );
+    background-size: 200% 200%;
+    animation: holo-shine 4s ease infinite;
+  }
+}
+
+@keyframes holo-shine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
