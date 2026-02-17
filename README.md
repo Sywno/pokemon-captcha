@@ -1,5 +1,7 @@
 # 🎮 Pokémon Pack & Battle
 
+Groupe : Beuvain Simon, Charlemagne Gabin, Dujardin Romain
+
 Un jeu web Pokémon original combinant l'ouverture de packs, la collection, les combats stratégiques au tour par tour, et un **agent IA narrateur multi-agent** qui commente les combats en temps réel avec synthèse vocale.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
