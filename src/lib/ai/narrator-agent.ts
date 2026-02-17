@@ -89,14 +89,26 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<str
 // ── OpenAI-compatible API call (OpenAI + Ollama) ─────────────
 
 async function callOpenAICompatible(systemPrompt: string, userPrompt: string): Promise<string> {
-    const isOllama = !process.env.OPENAI_API_KEY;
-    const baseUrl = isOllama
-        ? (process.env.OLLAMA_BASE_URL || "http://localhost:11434") + "/v1"
-        : "https://api.openai.com/v1";
-    const apiKey = isOllama ? "ollama" : process.env.OPENAI_API_KEY!;
-    const model = isOllama
-        ? (process.env.OLLAMA_MODEL || "llama3")
-        : (process.env.OPENAI_MODEL || "gpt-4o-mini");
+    // Detect provider: Mistral > OpenAI > Ollama
+    let baseUrl: string;
+    let apiKey: string;
+    let model: string;
+
+    if (process.env.MISTRAL_API_KEY) {
+        baseUrl = "https://api.mistral.ai/v1";
+        apiKey = process.env.MISTRAL_API_KEY;
+        model = process.env.MISTRAL_MODEL || "mistral-small-latest";
+    } else if (process.env.OPENAI_API_KEY) {
+        baseUrl = "https://api.openai.com/v1";
+        apiKey = process.env.OPENAI_API_KEY;
+        model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    } else {
+        baseUrl = (process.env.OLLAMA_BASE_URL || "http://localhost:11434") + "/v1";
+        apiKey = "ollama";
+        model = process.env.OLLAMA_MODEL || "llama3";
+    }
+
+    console.log(`[Narrator] Calling ${baseUrl} with model: ${model}`);
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
@@ -157,7 +169,7 @@ RÈGLES STRICTES:
     const userPrompt = `Tour numéro ${context.turnNumber}. Commente ce tour de façon ORIGINALE:\n\n${battleData}`;
 
     // Route to the correct provider
-    if (process.env.GOOGLE_API_KEY) {
+    if (process.env.GOOGLE_API_KEY && !process.env.MISTRAL_API_KEY) {
         return callGemini(systemPrompt, userPrompt);
     } else {
         return callOpenAICompatible(systemPrompt, userPrompt);

@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
         const hasProvider =
             process.env.OPENAI_API_KEY ||
             process.env.GOOGLE_API_KEY ||
+            process.env.MISTRAL_API_KEY ||
             process.env.OLLAMA_BASE_URL;
 
         if (!hasProvider) {
