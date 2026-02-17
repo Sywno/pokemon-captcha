@@ -28,7 +28,7 @@ export default function BattlePage() {
 
     // Narrator State
     const [personalityId, setPersonalityId] = useState('sportscaster');
-    const { commentary, isNarrating, error: narratorError, narrateTurn: narrateAction, clearCommentary } = useNarrator(personalityId);
+    const { commentary, isNarrating, isSpeaking, isMuted, error: narratorError, narrateTurn: narrateAction, clearCommentary, toggleMute } = useNarrator(personalityId);
 
     // Filtered List
     const filteredList = pokemonList.filter(p => {
@@ -514,8 +514,11 @@ export default function BattlePage() {
             <NarratorBox
                 commentary={commentary}
                 isNarrating={isNarrating}
+                isSpeaking={isSpeaking}
+                isMuted={isMuted}
                 error={narratorError}
                 personalityId={personalityId}
+                onToggleMute={toggleMute}
             />
         </div>
     );

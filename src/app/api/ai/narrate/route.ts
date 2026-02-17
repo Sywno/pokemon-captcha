@@ -1,5 +1,7 @@
 // ============================================================
 // API Route — POST /api/ai/narrate
+// Orchestrator: calls the LangGraph narrator agent
+// Returns: { commentary: string, audio: string | null }
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -33,24 +35,30 @@ export async function POST(request: NextRequest) {
         if (!hasProvider) {
             return NextResponse.json(
                 {
-                    error: "No AI provider configured. Set OPENAI_API_KEY, GOOGLE_API_KEY, or OLLAMA_BASE_URL in .env.local",
+                    error: "No AI provider configured. Set MISTRAL_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY, or OLLAMA_BASE_URL in .env.local",
                 },
                 { status: 503 }
             );
         }
 
-        // Run the narrator agent
-        console.log("[API /narrate] Calling narrateTurn...");
-        const commentary = await narrateTurn(
+        // Run the LangGraph narrator agent
+        // The agent autonomously calls its tools (battle context, personality,
+        // type matchup, pokemon lore, battle history, TTS) and returns results
+        console.log("[API /narrate] Starting narrator agent...");
+        const result = await narrateTurn(
             battleContext,
             personalityId || "sportscaster"
         );
 
-        console.log("[API /narrate] === RESULT ===");
-        console.log("[API /narrate] commentary length:", commentary.length);
-        console.log("[API /narrate] commentary:", commentary);
+        console.log("[API /narrate] Agent complete:", {
+            commentary: result.commentary?.substring(0, 80) + "...",
+            hasAudio: !!result.audio,
+        });
 
-        return NextResponse.json({ commentary });
+        return NextResponse.json({
+            commentary: result.commentary,
+            audio: result.audio,
+        });
     } catch (error: unknown) {
         console.error("[Narrator API Error]", error);
 

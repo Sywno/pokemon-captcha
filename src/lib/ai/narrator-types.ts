@@ -133,3 +133,10 @@ export interface BattleTurnContext {
         winner: "player" | "enemy" | null;
     };
 }
+
+// ── Agent Result ─────────────────────────────────────────────
+
+export interface NarratorResult {
+    commentary: string;
+    audio: string | null; // base64 mp3 from ElevenLabs, null if TTS unavailable
+}

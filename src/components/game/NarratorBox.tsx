@@ -1,25 +1,31 @@
 // ============================================================
-// NarratorBox — Battle commentary panel
+// NarratorBox — Battle commentary panel with TTS controls
 // ============================================================
 
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Loader2 } from "lucide-react";
+import { MessageCircle, Loader2, Volume2, VolumeX } from "lucide-react";
 import { PERSONALITIES } from "@/lib/ai/narrator-types";
 
 interface NarratorBoxProps {
     commentary: string;
     isNarrating: boolean;
+    isSpeaking: boolean;
+    isMuted: boolean;
     error: string | null;
     personalityId: string;
+    onToggleMute: () => void;
 }
 
 export function NarratorBox({
     commentary,
     isNarrating,
+    isSpeaking,
+    isMuted,
     error,
     personalityId,
+    onToggleMute,
 }: NarratorBoxProps) {
     const personality = PERSONALITIES[personalityId] || PERSONALITIES.sportscaster;
 
@@ -46,18 +52,54 @@ export function NarratorBox({
                         <span className="text-xs font-bold text-purple-300 uppercase tracking-widest">
                             {personality.name}
                         </span>
-                        {isNarrating && (
+
+                        {/* Speaking wave animation */}
+                        {isSpeaking && (
                             <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                className="ml-auto"
+                                className="flex items-center gap-[2px] ml-1"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
                             >
-                                <Loader2 size={14} className="text-purple-400" />
+                                {[0, 1, 2, 3].map((i) => (
+                                    <motion.span
+                                        key={i}
+                                        className="w-[3px] bg-green-400 rounded-full"
+                                        animate={{ height: [4, 12, 4] }}
+                                        transition={{
+                                            duration: 0.5,
+                                            repeat: Infinity,
+                                            delay: i * 0.1,
+                                        }}
+                                    />
+                                ))}
                             </motion.div>
                         )}
-                        {!isNarrating && (
-                            <MessageCircle size={14} className="text-purple-400/60 ml-auto" />
-                        )}
+
+                        <div className="ml-auto flex items-center gap-2">
+                            {/* Mute/Unmute button */}
+                            <button
+                                onClick={onToggleMute}
+                                className={`p-1 rounded-lg transition-all duration-200 ${isMuted
+                                        ? "text-red-400/60 hover:text-red-400 hover:bg-red-400/10"
+                                        : "text-green-400/60 hover:text-green-400 hover:bg-green-400/10"
+                                    }`}
+                                title={isMuted ? "Activer la voix" : "Couper la voix"}
+                            >
+                                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                            </button>
+
+                            {/* Loading / idle indicator */}
+                            {isNarrating ? (
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                >
+                                    <Loader2 size={14} className="text-purple-400" />
+                                </motion.div>
+                            ) : (
+                                <MessageCircle size={14} className="text-purple-400/60" />
+                            )}
+                        </div>
                     </div>
 
                     {/* Commentary text */}
